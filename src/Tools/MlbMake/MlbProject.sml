@@ -401,6 +401,82 @@ struct
         in
           parse_bdec_more mlbfile (MS.SIGNATUREbdec ((sigid, sigid_opt)::sigids), ss)
         end
+      | "structure" :: ss =>
+        let
+          fun parse_strid      []  = NONE
+            | parse_strid (id::ss) = if is_bid id then SOME (id, ss) else NONE
+
+          fun req_strid ss =
+            case parse_strid ss of
+              SOME x => x
+            | NONE => parse_error1 mlbfile ("I expect a structure identifier", ss)
+
+          fun parse_strid_and [] = ([], [])
+            | parse_strid_and ("and" :: ss) =
+              let
+                val (strid, ss) = req_strid ss
+                val (strid_opt, ss) =
+                  case ss of
+                    (* structure strid = strid' ... *)
+                    "=" :: ss =>
+                      let val (id, ss) = req_strid ss in (SOME id, ss) end
+                  | _         => (NONE, ss)
+              in
+                case parse_strid_and ss of
+                  (strids, ss) => ((strid, strid_opt)::strids, ss)
+              end
+            | parse_strid_and ss = ([], ss)
+
+          (* structure strid ... *)
+          val (strid, ss) = req_strid ss
+          val (strid_opt, ss) =
+            case ss of
+              (* structure strid = strid' ... *)
+              "=" :: ss =>
+                let val (id, ss) = req_strid ss in (SOME id, ss) end
+            | _         => (NONE, ss)
+          val (strids, ss) = parse_strid_and ss
+        in
+          parse_bdec_more mlbfile (MS.STRUCTUREbdec ((strid, strid_opt)::strids), ss)
+        end
+      | "functor" :: ss =>
+        let
+          fun parse_funid      []  = NONE
+            | parse_funid (id::ss) = if is_bid id then SOME (id, ss) else NONE
+
+          fun req_funid ss =
+            case parse_funid ss of
+              SOME x => x
+            | NONE => parse_error1 mlbfile ("I expect a functor identifier", ss)
+
+          fun parse_funid_and [] = ([], [])
+            | parse_funid_and ("and" :: ss) =
+              let
+                val (funid, ss) = req_funid ss
+                val (funid_opt, ss) =
+                  case ss of
+                    (* functor funid = funid' ... *)
+                    "=" :: ss =>
+                      let val (id, ss) = req_funid ss in (SOME id, ss) end
+                  | _         => (NONE, ss)
+              in
+                case parse_funid_and ss of
+                  (funids, ss) => ((funid, funid_opt)::funids, ss)
+              end
+            | parse_funid_and ss = ([], ss)
+
+          (* functor funid ... *)
+          val (funid, ss) = req_funid ss
+          val (funid_opt, ss) =
+            case ss of
+              (* functor funid = funid' ... *)
+              "=" :: ss =>
+                let val (id, ss) = req_funid ss in (SOME id, ss) end
+            | _         => (NONE, ss)
+          val (funids, ss) = parse_funid_and ss
+        in
+          parse_bdec_more mlbfile (MS.FUNCTORbdec ((funid, funid_opt)::funids), ss)
+        end
       | s :: ss =>
         if is_smlfile s then parse_bdec_more mlbfile (MS.ATBDECbdec (expand mlbfile s),ss)
         else 
