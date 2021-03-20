@@ -58,18 +58,6 @@ struct
           "safeLinkTimeElimination" => true
         | _ => false
 
-    fun fold (SEQbdec(a,b))         e bas loc fopen fatbdec fmlb script ann = 
-        fold b (fold a e bas loc fopen fatbdec fmlb script ann)
-             bas loc fopen fatbdec fmlb script ann
-      | fold EMPTYbdec              e bas loc fopen fatbdec fmlb script ann = e
-      | fold (LOCALbdec(a,b))       e bas loc fopen fatbdec fmlb script ann = loc(b,loc(a,e))
-      | fold (BASISbdec (bid,bexp)) e bas loc fopen fatbdec fmlb script ann = bas(bid,bexp,e)
-      | fold (OPENbdec l)           e bas loc fopen fatbdec fmlb script ann = List.foldl fopen e l
-      | fold (ATBDECbdec a)         e bas loc fopen fatbdec fmlb script ann = fatbdec(a,e)
-      | fold (MLBFILEbdec (s,so))   e bas loc fopen fatbdec fmlb script ann = fmlb(s,so,e)
-      | fold (SCRIPTSbdec l)        e bas loc fopen fatbdec fmlb script ann = List.foldl script e l 
-      | fold (ANNbdec (ann',bdec))  e bas loc fopen fatbdec fmlb script ann = ann(ann',bdec,e)
-
   end
 
   val depDir : string ref = ref "PM"
