@@ -375,6 +375,44 @@ struct
         in case parse_ann mlbfile ss of 
              (anns,ss) => parse_rest(anns,ss)
         end
+      | "signature" :: ss =>
+        let
+          fun parse_sigid      []  = NONE
+            | parse_sigid (id::ss) = if is_bid id then SOME (id, ss) else NONE
+
+          fun req_sigid ss =
+            case parse_sigid ss of
+              SOME x => x
+            | NONE => parse_error1 mlbfile ("I expect a signature identifier", ss)
+
+          fun parse_sigid_and [] = ([], [])
+            | parse_sigid_and ("and" :: ss) =
+              let
+                val (sigid, ss) = req_sigid ss
+                val (sigid_opt, ss) =
+                  case ss of
+                    (* signature sigid = sigid' ... *)
+                    "=" :: ss =>
+                      let val (id, ss) = req_sigid ss in (SOME id, ss) end
+                  | _         => (NONE, ss)
+              in
+                case parse_sigid_and ss of
+                  (sigids, ss) => ((sigid, sigid_opt)::sigids, ss)
+              end
+            | parse_sigid_and ss = ([], ss)
+
+          (* signature sigid ... *)
+          val (sigid, ss) = req_sigid ss
+          val (sigid_opt, ss) =
+            case ss of
+              (* signature sigid = sigid' ... *)
+              "=" :: ss =>
+                let val (id, ss) = req_sigid ss in (SOME id, ss) end
+            | _         => (NONE, ss)
+          val (sigids, ss) = parse_sigid_and ss
+        in
+          parse_bdec_more mlbfile (MS.SIGNATUREbdec ((sigid, sigid_opt)::sigids), ss)
+        end
       | s :: ss =>
         if is_smlfile s then parse_bdec_more mlbfile (MS.ATBDECbdec (expand mlbfile s),ss)
         else 
