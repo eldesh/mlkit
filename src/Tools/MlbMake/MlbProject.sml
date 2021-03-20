@@ -49,6 +49,9 @@ struct
              | MLBFILEbdec of string * string option  (* path.mlb <scriptpath p> *)
              | SCRIPTSbdec of atbdec list
              | ANNbdec of string * bdec
+             | SIGNATUREbdec of (string * string option) list
+             | STRUCTUREbdec of (string * string option) list
+             | FUNCTORbdec of (string * string option) list
 
     fun supported_annotation s =
         case s of
@@ -179,6 +182,10 @@ struct
       | "basis" => true
       | "scriptpath" => true
       | "ann" => true
+      | "and" => true
+      | "signature" => true
+      | "structure" => true
+      | "functor" => true
       | _ => false
 
   local           
