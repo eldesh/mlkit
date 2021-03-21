@@ -53,6 +53,78 @@ struct
              | STRUCTUREbdec of (string * string option) list
              | FUNCTORbdec of (string * string option) list
 
+    fun bexp_to_string bexp =
+      case bexp
+        of BASbexp bdec         => String.concatWith " " [
+                                     "bas",
+                                     bdec_to_string bdec,
+                                     "end"
+                                   ]
+         | LETbexp (bdec, bexp) => String.concatWith " " [
+                                     "let",
+                                     bdec_to_string bdec,
+                                     "in",
+                                     bexp_to_string bexp,
+                                     "end"
+                                   ]
+         | LONGBIDbexp longbid  => Bid.pp_longbid longbid
+
+    and bdec_to_string bdec =
+      case bdec
+        of SEQbdec (bdec1, bdec2) => bdec_to_string bdec1 ^ ";" ^ bdec_to_string bdec2
+         | EMPTYbdec => "emp"
+         | LOCALbdec (bdec1, bdec2) => String.concatWith " " [
+                                         "local",
+                                         bdec_to_string bdec1,
+                                         "in",
+                                         bdec_to_string bdec2,
+                                         "end"
+                                       ]
+         | BASISbdec (bid, bexp)    => String.concatWith " " [
+                                         "basis",
+                                         Bid.pp_bid bid,
+                                         "=",
+                                         bexp_to_string bexp
+                                       ]
+         | OPENbdec longbids        => String.concatWith " " [
+                                         "open",
+                                         String.concatWith " " (map Bid.pp_longbid longbids)
+                                       ]
+         | ATBDECbdec atbdec        => atbdec
+         | MLBFILEbdec (mlb, _)     => mlb ^ ".mlb"
+         | SCRIPTSbdec atbdecs      => String.concatWith " " atbdecs
+         | ANNbdec (ann, bdec)      => String.concatWith " " [ ann, bdec_to_string bdec ]
+         | SIGNATUREbdec sigids     => String.concatWith " " [
+                                         "signature",
+                                         String.concatWith " and " (
+                                           map (fn (id,sopt) =>
+                                                  case sopt
+                                                    of NONE   => id
+                                                     | SOME s => id ^ "=" ^ s)
+                                                  sigids
+                                         )
+                                       ]
+         | STRUCTUREbdec strids     => String.concatWith " " [
+                                         "structure",
+                                         String.concatWith " and " (
+                                           map (fn (id,sopt) =>
+                                                  case sopt
+                                                    of NONE   => id
+                                                     | SOME s => id ^ "=" ^ s)
+                                                  strids
+                                         )
+                                       ]
+         | FUNCTORbdec   funids     => String.concatWith " " [
+                                         "functor",
+                                         String.concatWith " and " (
+                                         map (fn (id,sopt) =>
+                                                case sopt
+                                                  of NONE   => id
+                                                   | SOME s => id ^ "=" ^ s)
+                                                   funids
+                                         )
+                                       ]
+
     fun supported_annotation s =
         case s of
           "safeLinkTimeElimination" => true
@@ -508,12 +580,13 @@ struct
           val ss = (lex mlbfile o drop_comments mlbfile o
                     explode o MlbFileSys.fromFile) mlbfile
         (* val _ = print_ss ss *)
-          val bdec = 
+          val bdec =
               case parse_bdec_opt mlbfile ss of
                 SOME (bdec,nil) => bdec
               | SOME (bdec,ss) => parse_error1 mlbfile ("misformed basis declaration", ss)
               | NONE => MS.EMPTYbdec
-        in (* print ("Successfully parsed " ^ mlbfile ^ "\n"); *)
+        in print ("Successfully parsed " ^ mlbfile ^ "\n");
+           print (MS.bdec_to_string bdec ^ "\n");
            bdec
         end
         handle IO.Io {name=io_s,cause,...} => error ("The basis file " ^ quot mlbfile ^ " cannot be opened")
